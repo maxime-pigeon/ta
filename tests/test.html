@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Test Page</title>
+</head>
+<body>
+  <!-- Missing alt attribute on img -->
+  <img src="photo.jpg">
+
+  <!-- Deprecated element -->
+  <center>Hello World</center>
+
+  <!-- Empty heading -->
+  <h1></h1>
+
+  <!-- Button missing type -->
+  <button>Click me</button>
+
+  <!-- Duplicate id -->
+  <div id="box">First</div>
+  <div id="box">Second</div>
+
+  <!-- no-style-tag: style tag not allowed -->
+  <style>
+    body { color: red; }
+  </style>
+
+  <!-- heading-level: skipped heading level (h1 → h3) -->
+  <h1>Title</h1>
+  <h3>Subtitle</h3>
+</body>
+</html>

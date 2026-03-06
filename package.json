@@ -1,0 +1,19 @@
+{
+  "name": "ta",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "eslint": "^10.0.2",
+    "eslint-plugin-jsdoc": "^62.7.1",
+    "eslint-plugin-sonarjs": "^4.0.1",
+    "eslint-plugin-unicorn": "^63.0.0",
+    "html-validate": "^10.11.1",
+    "stylelint": "^17.4.0"
+  }
+}

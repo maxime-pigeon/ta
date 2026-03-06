@@ -1,0 +1,15 @@
+name: Teaching Assistant
+description: Runs linters against changed files and posts inline review comments.
+inputs:
+  token:
+    description: GitHub token
+    required: true
+    default: ${{ github.token }}
+runs:
+  using: docker
+  image: Dockerfile
+  args:
+    - --config=/app/ta.toml
+  env:
+    GITHUB_TOKEN: ${{ inputs.token }}
+    PR_NUMBER: ${{ github.event.pull_request.number }}

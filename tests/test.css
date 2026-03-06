@@ -1,0 +1,50 @@
+/* Unknown property */
+a {
+  colour: red;
+}
+
+/* Missing units on non-zero value */
+p {
+  margin: 0px;
+  padding: 10;
+}
+
+/* Duplicate selectors */
+h1 {
+  font-size: 24px;
+}
+
+h1 {
+  color: blue;
+}
+
+/* Empty rule */
+.empty {
+}
+
+/* Vendor prefix without standard property */
+.box {
+  -webkit-border-radius: 4px;
+}
+
+/* color-no-invalid-hex: invalid hex color */
+.invalid-hex {
+  color: #zzz;
+}
+
+
+/* declaration-block-no-duplicate-properties: same property declared twice */
+.duplicate-prop {
+  font-size: 14px;
+  font-size: 16px;
+}
+
+/* shorthand-property-no-redundant-values: redundant shorthand values */
+.redundant {
+  margin: 10px 10px;
+}
+
+/* number-max-precision: too many decimal places */
+.precision {
+  opacity: 0.12345;
+}

@@ -1,0 +1,49 @@
+[[linter]]
+name        = "html-validate"
+extensions  = [".html"]
+command     = ["bunx", "html-validate", "--formatter", "json"]
+config_file = ".htmlvalidate.json"
+
+[linter.mapping]
+file_path     = "filePath"
+lints         = "messages"
+rule          = "ruleId"
+message       = "message"
+line          = "line"
+column        = "column"
+severity      = "severity"
+severity_type = "int"
+
+[[linter]]
+name        = "eslint"
+extensions  = [".js", ".ts"]
+command     = ["bunx", "eslint", "--no-ignore", "--format", "json"]
+config_file = "eslint.config.js"
+stderr      = true
+
+[linter.mapping]
+file_path     = "filePath"
+lints         = "messages"
+rule          = "ruleId"
+message       = "message"
+line          = "line"
+column        = "column"
+severity      = "severity"
+severity_type = "int"
+
+[[linter]]
+name        = "stylelint"
+extensions  = [".css"]
+command     = ["bunx", "stylelint", "--formatter", "json"]
+config_file = ".stylelintrc.json"
+stderr      = true
+
+[linter.mapping]
+file_path     = "source"
+lints         = "warnings"
+rule          = "rule"
+message       = "text"
+line          = "line"
+column        = "column"
+severity      = "severity"
+severity_type = "string"
