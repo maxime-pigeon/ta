@@ -12,7 +12,8 @@ import (
 	"github.com/maximepigeon/ta/review"
 )
 
-// reviewRequest is the payload for POST /repos/{owner}/{repo}/pulls/{pr}/reviews.
+// reviewRequest is the payload for
+// POST /repos/{owner}/{repo}/pulls/{pr}/reviews.
 type reviewRequest struct {
 	CommitID string           `json:"commit_id"`
 	Body     string           `json:"body"`
@@ -33,13 +34,18 @@ func buildReviewRequest(sha string, comments []review.Comment) reviewRequest {
 
 // Post creates a GitHub pull-request review with one inline comment per
 // finding via POST /repos/{owner}/{repo}/pulls/{pr}/reviews.
-func Post(token, repo string, pr int, sha string, comments []review.Comment) error {
+func Post(
+	token, repo string, pr int, sha string, comments []review.Comment,
+) error {
 	payload, err := json.Marshal(buildReviewRequest(sha, comments))
 	if err != nil {
 		return fmt.Errorf("marshaling review: %w", err)
 	}
 
-	url := fmt.Sprintf("https://api.github.com/repos/%s/pulls/%d/reviews", repo, pr)
+	url := fmt.Sprintf(
+		"https://api.github.com/repos/%s/pulls/%d/reviews",
+		repo, pr,
+	)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(payload))
 	if err != nil {
 		return fmt.Errorf("building request: %w", err)

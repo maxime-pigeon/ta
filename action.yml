@@ -1,13 +1,22 @@
 name: Teaching Assistant
-description: Parses JSON linter output from stdin and posts inline review comments.
+description: Runs a linter command and posts inline review comments on a PR.
 inputs:
   token:
     description: GitHub token
     required: true
     default: ${{ github.token }}
+  run:
+    description: Linter command that produces JSON output on stdout
+    required: true
 runs:
-  using: docker
-  image: Dockerfile
-  env:
-    GITHUB_TOKEN: ${{ inputs.token }}
-    PR_NUMBER: ${{ github.event.pull_request.number }}
+  using: composite
+  steps:
+    - name: Post review comments
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        TA_RUN: ${{ inputs.run }}
+      run: |
+        bash -c "$TA_RUN" \
+          | "${{ github.action_path }}/bin/ta-linux-amd64" --mode ci
