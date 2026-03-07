@@ -1,7 +1,0 @@
-{
-  "extends": ["html-validate:recommended"],
-  "rules": {
-    "no-style-tag": "error",
-    "heading-level": "error"
-  }
-}
