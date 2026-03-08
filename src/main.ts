@@ -3,7 +3,54 @@
 // inline GitHub pull-request review comments.
 
 import { getChangedFiles, postReview } from "./github.ts";
-import { lint, toComments } from "./linters.ts";
+import { lint, toComments, type Lint } from "./linters.ts";
+
+const isTTY = process.stdout.isTTY ?? false;
+const bold = (s: string) => isTTY ? `\x1b[1m${s}\x1b[0m` : s;
+const red = (s: string) => isTTY ? `\x1b[31m${s}\x1b[0m` : s;
+const yellow = (s: string) => isTTY ? `\x1b[33m${s}\x1b[0m` : s;
+const cyan = (s: string) => isTTY ? `\x1b[36m${s}\x1b[0m` : s;
+
+/**
+ * readLine reads a single line from a file. Returns "" on any error so
+ * callers can degrade gracefully when the file is unreadable.
+ */
+async function readLine(
+    filePath: string,
+    lineNum: number,
+): Promise<string> {
+    try {
+        const text = await Bun.file(filePath).text();
+        return text.split("\n")[lineNum - 1] ?? "";
+    } catch {
+        return "";
+    }
+}
+
+/**
+ * formatLint formats a single Lint finding with its source line into a
+ * multi-line diagnostic block similar to Rust's rustc output.
+ */
+function formatLint(l: Lint, sourceLine: string): string {
+    const label = l.severity === "error" ? "Error" : "Warning";
+    const color = l.severity === "error" ? red : yellow;
+    const gutterW = String(l.line).length;
+    const pad = " ".repeat(gutterW);
+    const caret = " ".repeat(Math.max(0, l.column - 1)) + "^";
+    const arrow = bold(cyan("-->"));
+    const pipe = bold(cyan("|"));
+    const heading = bold(color(`${label}: ${l.message}`));
+    const lines = [
+        heading,
+        `  ${arrow} ${l.filePath}:${l.line}:${l.column}`,
+        `   ${pad}${pipe}`,
+    ];
+    if (sourceLine) {
+        lines.push(`${l.line.toString().padStart(gutterW + 2)} ${pipe} ${sourceLine}`);
+        lines.push(`   ${pad}${pipe} ${caret}`);
+    }
+    return lines.join("\n");
+}
 
 /** srcFiles returns all lintable files under the given directory. */
 async function srcFiles(dir: string): Promise<string[]> {
@@ -16,9 +63,14 @@ async function srcFiles(dir: string): Promise<string[]> {
 /** runStdout lints src files and prints findings to stdout. */
 async function runStdout(): Promise<void> {
     const files = await srcFiles(`${process.cwd()}/src`);
-    const comments = toComments(await lint(files));
-    for (const c of comments) {
-        console.log(`${c.path}:${c.line}: ${c.body}`);
+    const lints = await lint(files);
+    const parts = await Promise.all(
+        lints.map(async (l) =>
+            formatLint(l, await readLine(l.filePath, l.line))
+        ),
+    );
+    if (parts.length > 0) {
+        console.log(parts.join("\n\n"));
     }
 }
 
