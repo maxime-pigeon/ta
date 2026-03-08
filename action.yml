@@ -19,4 +19,4 @@ runs:
         TA_RUN: ${{ inputs.run }}
       run: |
         bash -c "$TA_RUN" \
-          | "${{ github.action_path }}/bin/ta-linux-amd64" --mode ci
+          | "${{ github.action_path }}/bin/ta-linux-amd64" --ci

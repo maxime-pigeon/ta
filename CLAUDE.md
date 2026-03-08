@@ -11,45 +11,36 @@ with code in this repository.
 - Always add context to errors.
 - Always document code.
 - Avoid dependencies when possible.
+- Never use `as`.
 - Always run the commands below before finishing a task.
 
 ## Commands
 
 ```bash
-go fmt ./...
-go vet ./...
-go tool staticcheck ./...
-go test ./...
+bunx tsc --noEmit
+bun test
 ```
 
 ## Architecture
 
-`ta` is a GitHub Action (defined in `action.yml`) that reads JSON linter
-output from stdin and posts inline pull-request review comments via the
-GitHub API.
+`ta` is a TypeScript library (Bun) that parses JSON linter output and
+posts inline pull-request review comments via the GitHub API.
 
-**Data flow:** stdin JSON → `review.Parse()` → `[]Lint` →
-`review.ToComments()` → `[]Comment` → `github.Post()` → GitHub PR review
-
-**Two operating modes** (determined at runtime in `main.go`):
-
-- **Local mode**: any of `--token`, `--repo`, `--pr`, `--sha` is missing
-  → prints `path:line: message` to stdout
-- **CI mode**: all four present → calls `github.Post()` to create a
-  GitHub pull-request review
+**Data flow:** parsed JSON → `parse()` → `Lint[]` → `toComments()` →
+`Comment[]` → `post()` → GitHub PR review
 
 **Package layout:**
 
-- `main.go` — CLI parsing (via `kong`), stdin reading, mode dispatch
-- `review/review.go` — `Lint` and `Comment` types, `ToComment()`,
-  `ToComments()`, `formatBody()`
-- `review/parser.go` — `Parse()` and helpers; auto-detects ESLint,
+- `src/index.ts` — re-exports public API
+- `src/review.ts` — `Lint` and `Comment` types, `toComments()`,
+  `formatBody()`
+- `src/parser.ts` — `parse()` and helpers; auto-detects ESLint,
   stylelint, and html-validate JSON formats
-- `github/github.go` — `Post()` wraps GitHub REST API
+- `src/github.ts` — `post()` wraps GitHub REST API
   (`POST /repos/{owner}/{repo}/pulls/{pr}/reviews`)
 
-**Format detection in `review/parser.go`:** uses key presence to
+**Format detection in `src/parser.ts`:** uses key presence to
 distinguish formats — ESLint/html-validate use
 `filePath`/`messages`/`ruleId`; stylelint uses
 `source`/`warnings`/`rule`/`text`. Severity is normalized from either
-integer (ESLint: `2`=error) or string (stylelint: `"error"`).
+number (ESLint: `2`=error) or string (stylelint: `"error"`).
