@@ -34,7 +34,25 @@ func buildReviewRequest(sha string, comments []review.Comment) reviewRequest {
 
 // Post creates a GitHub pull-request review with one inline comment per
 // finding via POST /repos/{owner}/{repo}/pulls/{pr}/reviews.
+// Comments are sent in batches of 30 to avoid GitHub abuse rate limits.
 func Post(
+	token, repo string, pr int, sha string, comments []review.Comment,
+) error {
+	const maxPerRequest = 30
+	for i := 0; i < len(comments); i += maxPerRequest {
+		end := i + maxPerRequest
+		if end > len(comments) {
+			end = len(comments)
+		}
+		if err := postReview(token, repo, pr, sha, comments[i:end]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// postReview sends a single review request to the GitHub API.
+func postReview(
 	token, repo string, pr int, sha string, comments []review.Comment,
 ) error {
 	payload, err := json.Marshal(buildReviewRequest(sha, comments))
