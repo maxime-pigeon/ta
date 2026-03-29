@@ -1,9 +1,12 @@
+//! Reporter that posts comments as a GitHub pull request review.
+
 use anyhow::{bail, Context as _, Result};
 use serde::Serialize;
 
 use crate::report::{Comment, Severity};
 
-#[derive(Serialize, Clone)]
+/// A single inline comment in a GitHub pull request review.
+#[derive(Serialize)]
 struct ReviewComment {
     path: String,
     line: usize,
@@ -11,11 +14,14 @@ struct ReviewComment {
 }
 
 impl ReviewComment {
+    /// Converts a [`Comment`] into a [`ReviewComment`].
     fn from_comment(comment: &Comment, cwd: &str) -> Result<Self> {
         if comment.line == 0 {
             bail!("comment has line 0, which is invalid for GitHub review API: {comment:?}");
         }
         let prefix = format!("{cwd}/");
+        // The GitHub review API requires paths relative to the repo
+        // root, but linters report absolute paths.
         let path = comment
             .filepath
             .strip_prefix(&prefix)
@@ -29,11 +35,12 @@ impl ReviewComment {
         Ok(Self {
             path,
             line: comment.line,
-            body: format_body(comment.severity, &comment.message),
+            body: format_comment_body(comment.severity, &comment.message),
         })
     }
 }
 
+/// The request body for the GitHub pull request review API.
 #[derive(Serialize)]
 struct ReviewRequest {
     commit_id: String,
@@ -42,24 +49,16 @@ struct ReviewRequest {
     comments: Vec<ReviewComment>,
 }
 
-fn format_body(severity: Severity, message: &str) -> String {
+/// Formats a comment body with severity prefix and HTML-escaped message.
+fn format_comment_body(severity: Severity, message: &str) -> String {
     let kind = match severity {
-        Severity::Error => "CAUTION",
-        Severity::Warning => "WARNING",
+        Severity::Error => "error",
+        Severity::Warning => "warning",
     };
-    format!("**{kind}**: {}", html_escape::encode_text(message))
+    format!("TA {kind}: {}", html_escape::encode_text(message))
 }
 
-fn to_review_comments(
-    comments: &[Comment],
-    cwd: &str,
-) -> Result<Vec<ReviewComment>> {
-    comments
-        .iter()
-        .map(|comment| ReviewComment::from_comment(comment, cwd))
-        .collect()
-}
-
+// Parses a PR number from a Git ref of the form `refs/pull/<number>/merge`.
 fn pr_from_ref(reference: &str) -> Option<u64> {
     reference
         .strip_prefix("refs/pull/")?
@@ -69,30 +68,8 @@ fn pr_from_ref(reference: &str) -> Option<u64> {
         .ok()
 }
 
-fn send_review(
-    review_comments: Vec<ReviewComment>,
-    token: &str,
-    repo: &str,
-    pr: u64,
-    sha: &str,
-) -> Result<()> {
-    let url =
-        format!("https://api.github.com/repos/{repo}/pulls/{pr}/reviews");
-    let body = ReviewRequest {
-        commit_id: sha.to_string(),
-        body: String::new(),
-        event: "COMMENT".to_string(),
-        comments: review_comments,
-    };
-    ureq::post(&url)
-        .set("Authorization", &format!("Bearer {token}"))
-        .set("Accept", "application/vnd.github+json")
-        .send_json(&body)
-        .context("posting review")?;
-    Ok(())
-}
-
-pub fn run(comments: &[Comment]) -> Result<()> {
+/// Posts lint comments as a GitHub pull request review.
+pub fn post_review(comments: &[Comment]) -> Result<()> {
     let token =
         std::env::var("GITHUB_TOKEN").context("GITHUB_TOKEN not set")?;
     let repo = std::env::var("GITHUB_REPOSITORY")
@@ -110,13 +87,37 @@ pub fn run(comments: &[Comment]) -> Result<()> {
         .to_string_lossy()
         .into_owned();
 
-    let review_comments = to_review_comments(comments, &cwd)?;
+    let review_comments: Vec<ReviewComment> = comments
+        .iter()
+        .map(|comment| ReviewComment::from_comment(comment, &cwd))
+        .collect::<Result<Vec<_>>>()?;
 
     if review_comments.is_empty() {
-        println!("no comments");
         return Ok(());
     }
 
-    send_review(review_comments, &token, &repo, pr, &sha)?;
+    let url =
+        format!("https://api.github.com/repos/{repo}/pulls/{pr}/reviews");
+    let body = ReviewRequest {
+        commit_id: sha.clone(),
+        body: String::new(),
+        event: "COMMENT".to_string(),
+        comments: review_comments,
+    };
+    match ureq::post(&url)
+        .set("Authorization", &format!("Bearer {token}"))
+        .set("Accept", "application/vnd.github+json")
+        .send_json(&body)
+    {
+        Ok(_) => {}
+        Err(ureq::Error::Status(code, response)) => {
+            let body = response.into_string().unwrap_or_else(|error| {
+                format!("failed to read response: {error}")
+            });
+            bail!("GitHub API returned {code}: {body}");
+        }
+        Err(error) => return Err(error).context("posting review"),
+    }
+
     Ok(())
 }

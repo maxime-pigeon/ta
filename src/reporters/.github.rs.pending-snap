@@ -1,4 +1,0 @@
-{"run_id":"1774795582-612571000","line":172,"new":{"module_name":"ta__reporters__github__tests","snapshot_name":"format_body_escapes_html","metadata":{"source":"src/reporters/github.rs","assertion_line":172,"expression":"format_body(Severity::Error, \"<script>alert('xss')</script>\")"},"snapshot":"> [!CAUTION]\n> &lt;script&gt;alert('xss')&lt;/script&gt;"},"old":{"module_name":"ta__reporters__github__tests","metadata":{},"snapshot":"> [!CAUTION]\n> &lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;"}}
-{"run_id":"1774795591-924144000","line":156,"new":null,"old":null}
-{"run_id":"1774795591-924144000","line":172,"new":null,"old":null}
-{"run_id":"1774795591-924144000","line":164,"new":null,"old":null}

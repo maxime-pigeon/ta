@@ -1,0 +1,5 @@
+{"run_id":"1774888555-783600000","line":134,"new":{"module_name":"ta__parsers__eslint__tests","snapshot_name":"into_comment_unknown_severity","metadata":{"source":"src/parsers/eslint.rs","assertion_line":134,"expression":"error.to_string()"},"snapshot":"unknown ESLint severity: 0"},"old":{"module_name":"ta__parsers__eslint__tests","metadata":{},"snapshot":"            unknown `ESLint` severity: 0"}}
+{"run_id":"1774888571-296132000","line":100,"new":null,"old":null}
+{"run_id":"1774888571-296132000","line":83,"new":null,"old":null}
+{"run_id":"1774888571-296132000","line":117,"new":null,"old":null}
+{"run_id":"1774888571-296132000","line":134,"new":null,"old":null}

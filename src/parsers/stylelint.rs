@@ -1,15 +1,21 @@
+//! Parser for Stylelint JSON output (`stylelint --formatter json`).
+
 use anyhow::{bail, Context as _, Result};
 use itertools::process_results;
 use serde::Deserialize;
 
 use super::{Comment, Severity};
 
+/// A single file entry in Stylelint JSON output.
 #[derive(Deserialize)]
 struct FileEntry {
     source: String,
     warnings: Vec<Lint>,
 }
 
+/// A single lint diagnostic within a [`FileEntry`].
+///
+/// Stylelint calls these "warnings" regardless of severity.
 #[derive(Deserialize)]
 struct Lint {
     rule: String,
@@ -19,7 +25,7 @@ struct Lint {
     column: usize,
 }
 
-/// Parses Stylelint JSON output into a list of lints.
+/// Parses Stylelint JSON output into a list of lint comments.
 pub fn parse(data: &str) -> Result<Vec<Comment>> {
     let file_entries: Vec<FileEntry> =
         serde_json::from_str(data).context("parsing Stylelint JSON")?;
@@ -36,6 +42,7 @@ pub fn parse(data: &str) -> Result<Vec<Comment>> {
 }
 
 impl Lint {
+    /// Converts this lint diagnostic into a [`Comment`].
     fn into_comment(self, filepath: String) -> Result<Comment> {
         let severity = match self.severity.as_str() {
             "error" => Severity::Error,

@@ -1,9 +1,12 @@
+//! Parser for `ESLint` JSON output (`eslint --format json`).
+
 use anyhow::{bail, Context as _, Result};
 use itertools::process_results;
 use serde::Deserialize;
 
 use super::{Comment, Severity};
 
+/// A single file entry in `ESLint` JSON output.
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct FileEntry {
@@ -11,6 +14,7 @@ struct FileEntry {
     messages: Vec<Lint>,
 }
 
+/// A single lint diagnostic within a [`FileEntry`].
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Lint {
@@ -21,6 +25,7 @@ struct Lint {
     column: usize,
 }
 
+/// Parses `ESLint` JSON output into a list of lint comments.
 pub fn parse(json: &str) -> Result<Vec<Comment>> {
     let files: Vec<FileEntry> =
         serde_json::from_str(json).context("parsing ESLint JSON")?;
@@ -35,6 +40,7 @@ pub fn parse(json: &str) -> Result<Vec<Comment>> {
 }
 
 impl Lint {
+    /// Converts this lint diagnostic into a [`Comment`].
     fn into_comment(self, filepath: String) -> Result<Comment> {
         let severity = match self.severity {
             2 => Severity::Error,
@@ -46,6 +52,8 @@ impl Lint {
             line: self.line,
             col: self.column,
             severity,
+            // rule_id is None for syntax errors, which have no
+            // associated rule.
             rule: self.rule_id.unwrap_or_default(),
             message: self.message,
         })

@@ -1,7 +1,10 @@
+//! Reporter that writes lint comments to stdout.
+
 use std::io::{self, Write};
 
 use crate::report::{Comment, Severity};
 
+/// Writes lint comments to stdout.
 pub fn print(comments: &[Comment]) {
     let mut stdout = io::stdout();
     for comment in comments {
@@ -9,6 +12,7 @@ pub fn print(comments: &[Comment]) {
     }
 }
 
+/// Formats the given comment.
 fn comment_to_string(comment: &Comment) -> String {
     let severity = match comment.severity {
         Severity::Error => "error",

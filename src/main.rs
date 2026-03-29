@@ -9,6 +9,7 @@ use report::Report;
 
 #[derive(Parser)]
 #[command(arg_required_else_help = true)]
+#[allow(clippy::doc_markdown)]
 struct Args {
     /// Path to ESLint JSON output
     #[arg(long, value_name = "PATH")]
@@ -44,6 +45,7 @@ fn main() {
         report.add_linter("Stylelint", filepath, parsers::stylelint::parse);
     }
     if let Some(filepath) = &args.html_validate {
+        // html-validate uses the same JSON output format as ESLint.
         report.add_linter("html-validate", filepath, parsers::eslint::parse);
     }
 
@@ -61,7 +63,7 @@ fn main() {
 
     match args.reporter {
         Reporter::Github => {
-            if let Err(err) = reporters::github::run(&comments) {
+            if let Err(err) = reporters::github::post_review(&comments) {
                 eprintln!("{err:#}");
                 process::exit(1);
             }

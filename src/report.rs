@@ -2,12 +2,14 @@ use std::fs;
 
 use anyhow::{Context as _, Error, Result};
 
+/// Severity level of a comment.
 #[derive(Clone, Copy, Debug)]
 pub enum Severity {
     Error,
     Warning,
 }
 
+/// A comment in a report.
 #[derive(Debug)]
 pub struct Comment {
     pub filepath: String,
@@ -39,18 +41,22 @@ impl Comment {
     }
 }
 
+/// A registered linter with its output file path and parse function.
 struct Linter {
     name: String,
     filepath: String,
     parse: fn(&str) -> Result<Vec<Comment>>,
 }
 
+/// Aggregates output from multiple linters into a unified list of comments.
 pub struct Report {
     linters: Vec<Linter>,
+    /// Parse errors from linters. Populated after calling [`Report::build`].
     pub errors: Vec<Error>,
 }
 
 impl Report {
+    /// Creates a new report.
     pub fn new() -> Self {
         Report {
             linters: Vec::new(),
@@ -58,6 +64,8 @@ impl Report {
         }
     }
 
+    /// Registers a linter whose output will be included when
+    /// [`Report::build`] is called.
     pub fn add_linter(
         &mut self,
         name: &str,
@@ -71,30 +79,29 @@ impl Report {
         });
     }
 
+    /// Reads and parses all registered linters, returning the combined
+    /// comments.
+    ///
+    /// Returns an error if a linter's output file cannot be read. Linters
+    /// whose output fails to parse are skipped; their errors are stored in
+    /// [`Report::errors`].
     pub fn build(&mut self) -> Result<Vec<Comment>> {
         let mut comments = Vec::new();
         let mut parse_errors = Vec::new();
-
         for linter in &self.linters {
             let json = fs::read_to_string(&linter.filepath)
                 .with_context(|| format!("reading {}", linter.filepath))?;
             match (linter.parse)(&json) {
                 Ok(lints) => comments.extend(lints),
+                // Parse errors are collected rather than returned early
+                // so that a failure in one linter does not suppress
+                // results from others.
                 Err(err) => {
                     parse_errors.push(err.context(linter.name.clone()));
                 }
             }
         }
-
         self.errors = parse_errors;
-
-        comments.sort_by(|a, b| {
-            a.filepath
-                .cmp(&b.filepath)
-                .then(a.line.cmp(&b.line))
-                .then(a.col.cmp(&b.col))
-        });
-
         Ok(comments)
     }
 }
