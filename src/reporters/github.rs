@@ -69,10 +69,8 @@ fn pr_from_ref(reference: &str) -> Option<u64> {
         .ok()
 }
 
-const MAX_COMMENTS_PER_REVIEW: usize = 30;
-
-fn send_batch(
-    review_comments: &[ReviewComment],
+fn send_review(
+    review_comments: Vec<ReviewComment>,
     token: &str,
     repo: &str,
     pr: u64,
@@ -84,7 +82,7 @@ fn send_batch(
         commit_id: sha.to_string(),
         body: String::new(),
         event: "COMMENT".to_string(),
-        comments: review_comments.to_vec(),
+        comments: review_comments,
     };
     ureq::post(&url)
         .set("Authorization", &format!("Bearer {token}"))
@@ -119,8 +117,6 @@ pub fn run(comments: &[Comment]) -> Result<()> {
         return Ok(());
     }
 
-    for batch in review_comments.chunks(MAX_COMMENTS_PER_REVIEW) {
-        send_batch(batch, &token, &repo, pr, &sha)?;
-    }
+    send_review(review_comments, &token, &repo, pr, &sha)?;
     Ok(())
 }
